@@ -3,13 +3,17 @@ run:
 	sudo apt update
 	sudo apt install -y openvswitch-switch
 	sudo ovs-vsctl add-br ovs1
+	sudo ovs-vsctl set bridge ovs1 protocols=OpenFlow14
 	sudo ovs-vsctl set-controller ovs1 tcp:127.0.0.1:6653
 	sudo ovs-docker add-port ovs1 eth3 RClient --ipaddress=192.168.63.2/24
 	sudo docker exec RClient ip -6 addr add fd63::1/64 dev eth3
 	sudo ovs-vsctl add-br ovs2
+	sudo ovs-vsctl set bridge ovs2 protocols=OpenFlow14
 	sudo ovs-vsctl set-controller ovs2 tcp:127.0.0.1:6653
-	sudo ovs-docker add-port ovs1 eth0 h1 --ipaddress=172.16.40.2/24
+	sudo ovs-docker add-port ovs2 eth0 h1 --ipaddress=172.16.40.2/24
 	sudo docker exec h1 ip -6 addr add 2a0b:4e07:c4:40::1/64 dev eth0
+
+	sudo ovs-vsctl add-port ovs2 vxlan1 -- set interface vxlan1 type=vxlan options:remote_ip=192.168.60.40
 
 	sudo ip link add veth0 type veth peer name veth1
 	sudo ovs-vsctl add-port ovs1 veth0
