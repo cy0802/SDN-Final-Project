@@ -1,0 +1,27 @@
+{
+  "apps": {
+    "nycu.sdnnfv.vrouter": {
+      "router": {
+        "connect-point": "",
+        "connect-point-mac": "",
+        "gateway-ip4": "172.16.40.1",
+        "gateway-ip6": "2a0b:4e07:c4:40::1",
+        "v4-peers": [
+          "192.168.70.40, 192.168.70.253",
+          "192.168.63.1, 192.168.63.2"
+        ],
+        "v6-peers": [
+          "fd70::40",
+          "fd63::1"
+        ]
+      }
+    },
+    "nycu.sdnnfv.proxyarp": {
+      "virtual-arps": {
+        "virtual-ip4": "172.16.40.1",
+        "virtual-ip6": "2a0b:4e07:c4:40::1",
+        "virtual-mac": "00:00:00:00:00:02"
+      }
+    }
+  }
+}

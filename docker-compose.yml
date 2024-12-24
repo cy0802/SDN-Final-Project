@@ -1,6 +1,6 @@
 services:
   onos:
-    image: onosproject/onos:latest
+    image: onosproject/onos:2.7-latest
     container_name: onos
     hostname: onos
     privileged: true
@@ -48,10 +48,13 @@ services:
     # entrypoint: ["/bin/sh","-c"]
 
   RClient:
-    image: frrouting/frr-debian
+    image: router
     container_name: RClient
     hostname: RClient
     privileged: true
+    build:
+      context: .
+      dockerfile: router.Dockerfile
     sysctls:
       - net.ipv4.ip_forward=1
     cap_add:
@@ -68,10 +71,13 @@ services:
       - ./config/RClient/frr.conf:/etc/frr/frr.conf
 
   RMain:
-    image: frrouting/frr-debian
+    image: router
     container_name: RMain
     hostname: RMain
     privileged: true
+    build:
+      context: .
+      dockerfile: router.Dockerfile
     sysctls:
       - net.ipv4.ip_forward=1
     cap_add:
