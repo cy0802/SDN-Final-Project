@@ -127,22 +127,24 @@ public class AppComponent {
         macTable.clear();
         macTable6.clear();
 
-        Annotations annotations = deviceService.getPort(ConnectPoint.deviceConnectPoint("of:0000000000000001/1")).annotations();
-        macTable.put(IpAddress.valueOf("192.168.63.1"), MacAddress.valueOf(annotations.value("portMac")));
-        macTable6.put(Ip6Address.valueOf("fd63::1"), MacAddress.valueOf(annotations.value("portMac")));
-        log.info("add " + annotations.value("portMac") + " to macTable");
+        MacAddress mac = MacAddress.valueOf("02:01:01:01:01:01");
 
-        annotations = deviceService.getPort(ConnectPoint.deviceConnectPoint("of:0000000000000002/1")).annotations();
-        macTable.put(IpAddress.valueOf("172.16.40.1"), MacAddress.valueOf(annotations.value("portMac")));
-        macTable6.put(Ip6Address.valueOf("2a0b:4e07:c4:40::1"), MacAddress.valueOf(annotations.value("portMac")));
-        log.info("add " + annotations.value("portMac") + " to macTable");
+        // Annotations annotations = deviceService.getPort(ConnectPoint.deviceConnectPoint("of:0000000000000001/1")).annotations();
+        macTable.put(IpAddress.valueOf("192.168.63.1"), mac);
+        macTable6.put(Ip6Address.valueOf("fd63::1"), mac);
+        // log.info("add " + annotations.value("portMac") + " to macTable");
+
+        // annotations = deviceService.getPort(ConnectPoint.deviceConnectPoint("of:0000000000000002/1")).annotations();
+        // macTable.put(IpAddress.valueOf("172.16.40.1"), mac);
+        // macTable6.put(Ip6Address.valueOf("2a0b:4e07:c4:40::1"), mac);
+        // log.info("add " + annotations.value("portMac") + " to macTable");
 
         for (Device device: devices) {
             if (!device.id().toString().equals("of:0000000000000001") && !device.id().toString().equals("of:0000000000000002")) {
-                annotations = deviceService.getPort(ConnectPoint.deviceConnectPoint(device.id() + "/2")).annotations();
-                macTable.put(IpAddress.valueOf("192.168.70.40"), MacAddress.valueOf(annotations.value("portMac")));
-                macTable6.put(Ip6Address.valueOf("fd70::40"), MacAddress.valueOf(annotations.value("portMac")));
-                log.info("add " + annotations.value("portMac") + " to macTable");
+                // annotations = deviceService.getPort(ConnectPoint.deviceConnectPoint(device.id() + "/2")).annotations();
+                macTable.put(IpAddress.valueOf("192.168.70.40"), mac);
+                macTable6.put(Ip6Address.valueOf("fd70::40"), mac);
+                // log.info("add " + annotations.value("portMac") + " to macTable");
                 break;
             }
         }
@@ -232,9 +234,9 @@ public class AppComponent {
         public void process(PacketContext context) {
             // Stop processing if the packet has been handled, since we
             // can't do any more to it.
-            if (context.isHandled()) {
-                return;
-            }
+            // if (context.isHandled()) {
+            //     return;
+            // }
             InboundPacket pkt = context.inPacket();
             Ethernet ethPkt = pkt.parsed();
 
@@ -252,8 +254,8 @@ public class AppComponent {
 
             if (ethPkt.getEtherType() == Ethernet.TYPE_ARP) {
                 // log.info("receive ARP pkt");
-                // handleARP(pkt);
-                return;
+                handleARP(pkt);
+                // return;
             }
 
             return;
@@ -271,24 +273,27 @@ public class AppComponent {
             NeighborAdvertisement neighborAd = (NeighborAdvertisement) icmp6pkt.getPayload();
             log.info("\tneighbor advertisement: " + neighborAd.toString());
 
-            MacAddress targetMac, srcMac;
-            List<NeighborDiscoveryOptions.Option> options = neighborAd.getOptions();
-            for (NeighborDiscoveryOptions.Option option: options) {
-                if (option.type() == NeighborDiscoveryOptions.TYPE_TARGET_LL_ADDRESS) {
-                    targetMac = MacAddress.valueOf(option.data());
-                    log.info("\tneighbor advertisement target MAC = " + targetMac);
-                } else if (option.type() == NeighborDiscoveryOptions.TYPE_SOURCE_LL_ADDRESS) {
-                    srcMac = MacAddress.valueOf(option.data());
-                    log.info("\tneighbor advertisement source MAC = " + srcMac);
-                } else {
-                    log.info("\tunknown option = " + option.toString());
-                }
+            Ip6Address srcIp6 = Ip6Address.valueOf(ipv6pkt.getSourceAddress());
+            MacAddress srcMac = ethPkt.getSourceMAC();
+            Ip6Address dstIp6 = Ip6Address.valueOf(ipv6pkt.getDestinationAddress());
+            Ip6Pair ip6Pair = new Ip6Pair(srcIp6, dstIp6);
+            log.info("\tsrc IP: " + srcIp6 + " / dst IP: " + dstIp6);
+            log.info("\tsrc MAC: " + srcMac + " / dst MAC: " + ethPkt.getDestinationMAC());
+            if (missPktStorage6.get(ip6Pair) == null) {
+                return;
             }
+            macTable6.put(srcIp6, srcMac);
+            log.info("add " + srcMac + " to macTable6");
+            DeviceId targetDeviceId = missPktStorage6.get(ip6Pair).deviceId();
+            PortNumber outport = missPktStorage6.get(ip6Pair).port();
+            missPktStorage6.remove(ip6Pair);
+            packetOut(ethPkt, targetDeviceId, outport);
+            log.info("RECV REPLY. Requested MAC = " + srcMac + " / device = " + targetDeviceId + " / port = " + outport);
         } else if (icmp6pkt.getIcmpType() == ICMP6.NEIGHBOR_SOLICITATION) {
-            log.info("receive neighbor solicitation");
-            log.info("\ticmp6: " + icmp6pkt.toString());
+            // log.info("receive neighbor solicitation");
+            // log.info("\ticmp6: " + icmp6pkt.toString());
             NeighborSolicitation neighborSol = (NeighborSolicitation) icmp6pkt.getPayload();
-            log.info("\tneighbor solicitation: " + neighborSol.toString());
+            // log.info("\tneighbor solicitation: " + neighborSol.toString());
             MacAddress srcMac;
             srcMac = ethPkt.getSourceMAC();
             Ip6Address srcIp6 = Ip6Address.valueOf(ipv6pkt.getSourceAddress());
@@ -308,7 +313,6 @@ public class AppComponent {
                 log.info("TABLE MISS. Send request to edge ports");
             } else {
                 // table hit, reply NDP to the device
-                // packetOutWithMac6(pkt.receivedFrom().deviceId(), pkt.receivedFrom().port(), targetIp6, srcIp6, macTable6.get(targetIp6), srcMac);
                 Ethernet ethPktReply = NeighborAdvertisement.buildNdpAdv(targetIp6, macTable6.get(targetIp6), ethPkt);
                 IPv6 ipv6Reply = (IPv6) ethPktReply.getPayload();
                 ipv6Reply.setHopLimit((byte) 255);
@@ -318,32 +322,6 @@ public class AppComponent {
             }
         }
     }
-
-    // private void packetOutWithMac6(DeviceId deviceId, PortNumber port, Ip6Address srcIp, Ip6Address dstIp, MacAddress srcMac, MacAddress dstMac) {
-    //     NeighborAdvertisement replyNdp = new NeighborAdvertisement();
-    //     replyNdp.setSolicitedFlag((byte) 1)
-    //             .setTargetAddress(srcIp.toOctets());
-        
-    //     ICMP6 icmp6 = new ICMP6();
-    //     icmp6.setIcmpType(ICMP6.NEIGHBOR_ADVERTISEMENT)
-    //         .setIcmpCode((byte) 0)
-    //         .setPayload(replyNdp);
-
-    //     IPv6 ipv6 = new IPv6();
-    //     ipv6.setSourceAddress(srcIp.toOctets())
-    //         .setDestinationAddress(dstIp.toOctets())
-    //         .setHopLimit((byte) 255)
-    //         .setNextHeader(IPv6.PROTOCOL_ICMP6)
-    //         .setPayload(replyNdp);
-
-    //     Ethernet ethPkt = new Ethernet();
-    //     ethPkt.setSourceMACAddress(srcMac)
-    //         .setDestinationMACAddress(dstMac)
-    //         .setEtherType(Ethernet.TYPE_IPV6)
-    //         .setPayload(ipv6);
-
-    //     packetOut(ethPkt, deviceId, port);
-    // }
 
     private void handleARP(InboundPacket pkt) {
         Ethernet ethPkt = pkt.parsed();

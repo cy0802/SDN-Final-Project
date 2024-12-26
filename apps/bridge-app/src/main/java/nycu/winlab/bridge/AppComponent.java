@@ -48,9 +48,15 @@ import org.onosproject.net.PortNumber;
 import org.onosproject.net.DeviceId;
 
 import org.onosproject.net.flow.FlowRuleService;
-
 import org.onosproject.net.flow.DefaultFlowRule;
 import org.onosproject.net.flow.FlowRule;
+
+// import org.onosproject.net.packet.OutboundPacket;
+// import org.onosproject.net.packet.DefaultOutboundPacket;
+
+// import org.onosproject.net.Device;
+import org.onosproject.net.device.DeviceService;
+// import java.nio.ByteBuffer;
 
 /**
  * Skeletal ONOS application component.
@@ -74,6 +80,8 @@ public class AppComponent {
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected FlowRuleService flowRuleService;
 
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
+    protected DeviceService deviceService;
 
     private LearningBridgeProcessor processor = new LearningBridgeProcessor();
     private ApplicationId appId;
@@ -83,7 +91,7 @@ public class AppComponent {
     protected void activate() {
 
         // register your app
-        appId = coreService.registerApplication("nycu.winlab.bridge");
+        appId = coreService.registerApplication("nycu.sdnnfv.bridge");
 
         // add a packet processor to packetService
         packetService.addProcessor(processor, PacketProcessor.director(2));
@@ -93,6 +101,9 @@ public class AppComponent {
         selector.matchEthType(Ethernet.TYPE_IPV4);
         packetService.requestPackets(selector.build(), PacketPriority.REACTIVE, appId);
 
+        selector = DefaultTrafficSelector.builder();
+        selector.matchEthType(Ethernet.TYPE_IPV6);
+        packetService.requestPackets(selector.build(), PacketPriority.REACTIVE, appId);
 
         log.info("Started");
     }
@@ -112,6 +123,10 @@ public class AppComponent {
         selector.matchEthType(Ethernet.TYPE_IPV4);
         packetService.cancelPackets(selector.build(), PacketPriority.REACTIVE, appId);
 
+        selector = DefaultTrafficSelector.builder();
+        selector.matchEthType(Ethernet.TYPE_IPV6);
+        packetService.cancelPackets(selector.build(), PacketPriority.REACTIVE, appId);
+
         log.info("Stopped");
     }
 
@@ -121,13 +136,17 @@ public class AppComponent {
         public void process(PacketContext context) {
             // Stop processing if the packet has been handled, since we
             // can't do any more to it.
-            if (context.isHandled()) {
-                return;
-            }
+            // if (context.isHandled()) {
+            //     return;
+            // }
             InboundPacket pkt = context.inPacket();
             Ethernet ethPkt = pkt.parsed();
 
             if (ethPkt == null) {
+                return;
+            }
+
+            if (ethPkt.getEtherType() != Ethernet.TYPE_IPV6 && ethPkt.getEtherType() != Ethernet.TYPE_IPV4) {
                 return;
             }
 
