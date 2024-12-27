@@ -33,6 +33,9 @@ run:
 	sudo docker exec RMain ip link set veth1 up
 	sudo docker exec RMain ip addr add 172.16.40.69/24 dev veth1
 	sudo docker exec RMain ip -6 addr add 2a0b:4e07:c4:40::69/64 dev veth1
+	sudo docker exec RMain ip addr add 192.168.63.1/24 dev veth1
+	sudo docker exec RMain sysctl -w net.ipv6.conf.veth1.accept_dad=0
+	sudo docker exec RMain ip -6 addr add fd63::1/64 dev veth1
 
 	sudo ip link add veth2 type veth peer name veth3
 	sudo ovs-vsctl add-port ovs1 veth2
@@ -57,3 +60,9 @@ run-bridge:
 
 rerun-bridge:
 	cd /home/ycyyo/final-project/apps/bridge-app && make rerun
+
+run-vrouter:
+	cd /home/ycyyo/final-project/apps/vrouter && make run
+
+rerun-vrouter:
+	cd /home/ycyyo/final-project/apps/vrouter && make rerun

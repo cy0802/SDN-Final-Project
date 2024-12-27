@@ -130,24 +130,27 @@ public class AppComponent {
         MacAddress mac = MacAddress.valueOf("02:01:01:01:01:01");
 
         // Annotations annotations = deviceService.getPort(ConnectPoint.deviceConnectPoint("of:0000000000000001/1")).annotations();
-        macTable.put(IpAddress.valueOf("192.168.63.1"), mac);
-        macTable6.put(Ip6Address.valueOf("fd63::1"), mac);
+        // macTable.put(IpAddress.valueOf("192.168.63.1"), mac);
+        // macTable6.put(Ip6Address.valueOf("fd63::1"), mac);
         // log.info("add " + annotations.value("portMac") + " to macTable");
+
+        // macTable.put(IpAddress.valueOf("172.16.40.1"), MacAddress.valueOf("02:01:01:01:01:02")); // just a non-exist mac for virtual gateway
+        // macTable6.put(Ip6Address.valueOf("2a0b:4e07:c4:40::1"), MacAddress.valueOf("02:01:01:01:01:02")); // just a non-exist mac for virtual gateway
 
         // annotations = deviceService.getPort(ConnectPoint.deviceConnectPoint("of:0000000000000002/1")).annotations();
         // macTable.put(IpAddress.valueOf("172.16.40.1"), mac);
         // macTable6.put(Ip6Address.valueOf("2a0b:4e07:c4:40::1"), mac);
         // log.info("add " + annotations.value("portMac") + " to macTable");
 
-        for (Device device: devices) {
-            if (!device.id().toString().equals("of:0000000000000001") && !device.id().toString().equals("of:0000000000000002")) {
-                // annotations = deviceService.getPort(ConnectPoint.deviceConnectPoint(device.id() + "/2")).annotations();
-                macTable.put(IpAddress.valueOf("192.168.70.40"), mac);
-                macTable6.put(Ip6Address.valueOf("fd70::40"), mac);
-                // log.info("add " + annotations.value("portMac") + " to macTable");
-                break;
-            }
-        }
+        // for (Device device: devices) {
+        //     if (!device.id().toString().equals("of:0000000000000001") && !device.id().toString().equals("of:0000000000000002")) {
+        //         // annotations = deviceService.getPort(ConnectPoint.deviceConnectPoint(device.id() + "/2")).annotations();
+        //         macTable.put(IpAddress.valueOf("192.168.70.40"), mac);
+        //         macTable6.put(Ip6Address.valueOf("fd70::40"), mac);
+        //         // log.info("add " + annotations.value("portMac") + " to macTable");
+        //         break;
+        //     }
+        // }
 
         log.info("Started");
     }
