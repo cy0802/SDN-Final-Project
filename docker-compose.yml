@@ -94,12 +94,12 @@ services:
 
 networks:
   default:
-      driver: bridge
-      enable_ipv6: false
-      ipam:
-        config:
-          - subnet: 192.168.100.0/24
-            gateway: 192.168.100.254
+    driver: bridge
+    enable_ipv6: false
+    ipam:
+      config:
+        - subnet: 192.168.100.0/24
+          gateway: 192.168.100.254
   br0:
     driver: bridge
     enable_ipv6: true

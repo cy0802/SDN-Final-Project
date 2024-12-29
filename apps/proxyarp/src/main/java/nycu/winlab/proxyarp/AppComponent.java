@@ -134,113 +134,18 @@ public class AppComponent {
         macTable6.put(Ip6Address.valueOf("fd70::40"), MacAddress.valueOf("02:01:01:01:01:01"));
         macTable.put(IpAddress.valueOf("172.16.40.69"), MacAddress.valueOf("02:01:01:01:01:01"));
         macTable6.put(Ip6Address.valueOf("2a0b:4e07:c4:40::69"), MacAddress.valueOf("02:01:01:01:01:01"));
+        macTable.put(IpAddress.valueOf("192.168.50.1"), MacAddress.valueOf("02:01:01:01:01:01"));
+        macTable6.put(Ip6Address.valueOf("fd50::1"), MacAddress.valueOf("02:01:01:01:01:01"));
         macTable.put(IpAddress.valueOf("172.16.40.2"), MacAddress.valueOf("5A:3C:91:B4:7E:2F"));
         macTable6.put(Ip6Address.valueOf("2a0b:4e07:c4:40::2"), MacAddress.valueOf("5A:3C:91:B4:7E:2F"));
         macTable.put(IpAddress.valueOf("172.16.40.1"), MacAddress.valueOf("02:01:01:01:01:02"));
         macTable6.put(Ip6Address.valueOf("2a0b:4e07:c4:40::1"), MacAddress.valueOf("02:01:01:01:01:02"));
-
-        // MacAddress mac = MacAddress.valueOf("02:01:01:01:01:01");
-        // Annotations annotations = deviceService.getPort(ConnectPoint.deviceConnectPoint("of:0000000000000001/1")).annotations();
-        // macTable.put(IpAddress.valueOf("192.168.63.1"), MacAddress.valueOf(annotations.value("portMac")));
-        // macTable6.put(Ip6Address.valueOf("fd63::1"), MacAddress.valueOf(annotations.value("portMac")));
-        // log.info("add " + annotations.value("portMac") + " to macTable");
-
-        // annotations = deviceService.getPort(ConnectPoint.deviceConnectPoint("of:0000000000000002/1")).annotations();
-        // macTable.put(IpAddress.valueOf("172.16.40.1"), MacAddress.valueOf(annotations.value("portMac")));
-        // macTable6.put(Ip6Address.valueOf("2a0b:4e07:c4:40::1"), MacAddress.valueOf(annotations.value("portMac")));
-
-        // for (Device device: devices) {
-        //     if (!device.id().toString().equals("of:0000000000000001") && !device.id().toString().equals("of:0000000000000002")) {
-        //         annotations = deviceService.getPort(ConnectPoint.deviceConnectPoint(device.id() + "/2")).annotations();
-        //         macTable.put(IpAddress.valueOf("192.168.70.40"), MacAddress.valueOf(annotations.value("portMac")));
-        //         macTable6.put(Ip6Address.valueOf("fd70::40"), MacAddress.valueOf(annotations.value("portMac")));
-        //         // log.info("add " + annotations.value("portMac") + " to macTable");
-        //         break;
-        //     }
-        // }
-
-        // TrafficSelector selector = DefaultTrafficSelector.builder()
-        //     .matchEthType(Ethernet.TYPE_IPV4)
-        //     .matchIPDst(IpAddress.valueOf("172.16.40.69").toIpPrefix())
-        //     .build();
-        // TrafficTreatment treatment = DefaultTrafficTreatment.builder()
-        //     .setOutput(PortNumber.portNumber(3))
-        //     .setEthDst(MacAddress.valueOf("02:01:01:01:01:01"))
-        //     .build();
-        // FlowRule flowRule = DefaultFlowRule.builder()
-        //     .forDevice(DeviceId.deviceId("of:0000000000000002"))
-        //     .fromApp(appId)
-        //     .makePermanent()
-        //     .withPriority(40014)
-        //     .withSelector(selector)
-        //     .withTreatment(treatment)
-        //     .build();
-        // flowRuleService.applyFlowRules(flowRule);
-
-        // TrafficSelector selector = DefaultTrafficSelector.builder()
-        //     .matchEthType(Ethernet.TYPE_IPV4)
-        //     .matchIPDst(IpAddress.valueOf("192.168.63.1").toIpPrefix())
-        //     .build();
-        // TrafficTreatment treatment = DefaultTrafficTreatment.builder()
-        //     .setOutput(PortNumber.portNumber(2))
-        //     .setEthDst(MacAddress.valueOf("02:01:01:01:01:01"))
-        //     .build();
-        // FlowRule flowRule = DefaultFlowRule.builder()
-        //     .forDevice(DeviceId.deviceId("of:0000000000000001"))
-        //     .fromApp(appId)
-        //     .makePermanent()
-        //     .withPriority(40015)
-        //     .withSelector(selector)
-        //     .withTreatment(treatment)
-        //     .build();
-        // flowRuleService.applyFlowRules(flowRule);
-        // selector = DefaultTrafficSelector.builder()
-        //     .matchEthType(Ethernet.TYPE_IPV6)
-        //     .matchIPv6Dst(IpPrefix.valueOf("fd63::1/128"))
-        //     .build();
-        // flowRule = DefaultFlowRule.builder()
-        //     .forDevice(DeviceId.deviceId("of:0000000000000001"))
-        //     .fromApp(appId)
-        //     .makePermanent()
-        //     .withPriority(40016)
-        //     .withSelector(selector)
-        //     .withTreatment(treatment)
-        //     .build();
-        // flowRuleService.applyFlowRules(flowRule);
-
-        // selector = DefaultTrafficSelector.builder()
-        //     .matchEthType(Ethernet.TYPE_IPV4)
-        //     .matchEthSrc(MacAddress.valueOf("02:01:01:01:01:01"))
-        //     .matchIPSrc(IpAddress.valueOf("192.168.63.1").toIpPrefix())
-        //     .build();
-        // treatment = DefaultTrafficTreatment.builder()
-        //     .setOutput(PortNumber.portNumber(1))
-        //     .setEthSrc(macTable.get(IpAddress.valueOf("192.168.63.1")))
-        //     .build();
-        // flowRule = DefaultFlowRule.builder()
-        //     .forDevice(DeviceId.deviceId("of:0000000000000001"))
-        //     .fromApp(appId)
-        //     .makePermanent()
-        //     .withPriority(40017)
-        //     .withSelector(selector)
-        //     .withTreatment(treatment)
-        //     .build();
-        // flowRuleService.applyFlowRules(flowRule);
-
-        // selector = DefaultTrafficSelector.builder()
-        //     .matchEthType(Ethernet.TYPE_IPV6)
-        //     .matchEthSrc(MacAddress.valueOf("02:01:01:01:01:01"))
-        //     .matchIPv6Src(IpPrefix.valueOf("fd63::1/128"))
-        //     .build();
-        // flowRule = DefaultFlowRule.builder()
-        //     .forDevice(DeviceId.deviceId("of:0000000000000001"))
-        //     .fromApp(appId)
-        //     .makePermanent()
-        //     .withPriority(40018)
-        //     .withSelector(selector)
-        //     .withTreatment(treatment)
-        //     .build();
-        // flowRuleService.applyFlowRules(flowRule);
+        macTable.put(IpAddress.valueOf("192.168.70.253"), MacAddress.valueOf("02:42:C0:A8:46:FD"));
+        macTable6.put(Ip6Address.valueOf("fd70::fe"), MacAddress.valueOf("02:42:C0:A8:46:FD"));
+        macTable.put(IpAddress.valueOf("192.168.50.2"), MacAddress.valueOf("02:42:AC:01:00:01"));
+        macTable6.put(Ip6Address.valueOf("fd50::2"), MacAddress.valueOf("02:42:AC:01:00:01"));
+        macTable.put(IpAddress.valueOf("192.168.63.2"), MacAddress.valueOf("5A:3C:91:B4:7E:2E"));
+        macTable6.put(Ip6Address.valueOf("fd63::2"), MacAddress.valueOf("5A:3C:91:B4:7E:2E"));
 
         log.info("Started");
     }
@@ -361,19 +266,20 @@ public class AppComponent {
         ICMP6 icmp6pkt = (ICMP6) ipv6pkt.getPayload(); 
         Ip6Address srcIp6 = Ip6Address.valueOf(ipv6pkt.getSourceAddress());
         MacAddress srcMac = ethPkt.getSourceMAC();
-        if (macTable6.get(srcIp6) == null) {
-            macTable6.put(srcIp6, srcMac);
-        }
+        // if (macTable6.get(srcIp6) == null) {
+        //     macTable6.put(srcIp6, srcMac);
+        //     log.info("add " + srcMac + " / " + srcIp6 + " to macTable6");
+        // }
 
         if (icmp6pkt.getIcmpType() == ICMP6.NEIGHBOR_ADVERTISEMENT) {
             // log.info("receive neighbor advertisement");
             // log.info("\ticmp6: " + icmp6pkt.toString());
-            NeighborAdvertisement neighborAd = (NeighborAdvertisement) icmp6pkt.getPayload();
+            // NeighborAdvertisement neighborAd = (NeighborAdvertisement) icmp6pkt.getPayload();
             // log.info("\tneighbor advertisement: " + neighborAd.toString());
 
             
-            Ip6Address dstIp6 = Ip6Address.valueOf(ipv6pkt.getDestinationAddress());
-            Ip6Pair ip6Pair = new Ip6Pair(srcIp6, dstIp6);
+            // Ip6Address dstIp6 = Ip6Address.valueOf(ipv6pkt.getDestinationAddress());
+            // Ip6Pair ip6Pair = new Ip6Pair(srcIp6, dstIp6);
             // log.info("\tsrc IP: " + srcIp6 + " / dst IP: " + dstIp6);
             // log.info("\tsrc MAC: " + srcMac + " / dst MAC: " + ethPkt.getDestinationMAC());
             // if (missPktStorage6.get(ip6Pair) == null) {
@@ -381,10 +287,10 @@ public class AppComponent {
             // }
             
             // log.info("add " + srcMac + " to macTable6");
-            DeviceId targetDeviceId = missPktStorage6.get(ip6Pair).deviceId();
-            PortNumber outport = missPktStorage6.get(ip6Pair).port();
-            missPktStorage6.remove(ip6Pair);
-            packetOut(ethPkt, targetDeviceId, outport);
+            // DeviceId targetDeviceId = missPktStorage6.get(ip6Pair).deviceId();
+            // PortNumber outport = missPktStorage6.get(ip6Pair).port();
+            // missPktStorage6.remove(ip6Pair);
+            // packetOut(ethPkt, targetDeviceId, outport);
             // log.info("RECV REPLY. Requested MAC = " + srcMac + " / device = " + targetDeviceId + " / port = " + outport);
         } else if (icmp6pkt.getIcmpType() == ICMP6.NEIGHBOR_SOLICITATION) {
             // log.info("receive neighbor solicitation");
@@ -407,6 +313,7 @@ public class AppComponent {
                 // //     packetOut(ethPkt, device.id(), PortNumber.FLOOD);
                 // // }
                 // // log.info("TABLE MISS. Send request to edge ports");
+                log.info("TABLE MISS. Requested IP = " + targetIp6);
             } else {
                 // table hit, reply NDP to the device
                 Ethernet ethPktReply = NeighborAdvertisement.buildNdpAdv(targetIp6, macTable6.get(targetIp6), ethPkt);
@@ -429,9 +336,10 @@ public class AppComponent {
 
         DeviceId deviceId = pkt.receivedFrom().deviceId();
         PortNumber inPort = pkt.receivedFrom().port();
-        if (macTable.get(arpSrcIp) == null) {
-            macTable.put(arpSrcIp, arpSrcMac);
-        }
+        // if (macTable.get(arpSrcIp) == null) {
+        //     macTable.put(arpSrcIp, arpSrcMac);
+        //     log.info("add " + arpSrcMac + " / " + arpSrcIp + " to macTable");
+        // }
 
         if (arpPkt.getOpCode() == ARP.OP_REPLY) {
             // // receive reply
@@ -462,7 +370,7 @@ public class AppComponent {
             } else {
                 // table hit, reply ARP to the device
                 packetOutWithMac(arpPkt, deviceId, inPort, macTable.get(arpTargetIp));
-                log.info("TABLE HIT. Requested MAC = " + macTable.get(arpTargetIp));
+                log.info("TABLE HIT. Requested MAC = " + macTable.get(arpTargetIp) + " for " + arpTargetIp);
             }
         }
     }

@@ -1,11 +1,11 @@
-run:
+deploy:
 	sudo docker compose up -d
 	
 	sudo ovs-vsctl add-br ovs1
 	sudo ovs-vsctl set bridge ovs1 other-config:datapath-id=0000000000000001
 	sudo ovs-vsctl set bridge ovs1 protocols=OpenFlow14
 	sudo ovs-vsctl set-controller ovs1 tcp:127.0.0.1:6653
-	sudo ovs-docker add-port ovs1 eth3 RClient --ipaddress=192.168.63.2/24
+	sudo ovs-docker add-port ovs1 eth3 RClient --ipaddress=192.168.63.2/24 --macaddress=5A:3C:91:B4:7E:2E
 	sudo docker exec RClient ip -6 addr add fd63::2/64 dev eth3
 	sudo docker exec RClient ip route replace default via 192.168.63.1 dev eth3
 	sudo docker exec h2 ip route replace default via 172.17.40.1 dev eth0
@@ -20,7 +20,9 @@ run:
 	sudo docker exec h1 ip route add default via 172.16.40.1
 	sudo docker exec h1 ip -6 route add default via 2a0b:4e07:c4:40::1
 
-	sudo ovs-vsctl add-port ovs2 vxlan1 -- set interface vxlan1 type=vxlan options:remote_ip=192.168.60.40
+	# sudo ip link set dev vxlan_sys_4789 mtu 1300
+
+	sudo ovs-vsctl add-port ovs2 vxlan2 -- set interface vxlan2 type=vxlan options:remote_ip=192.168.61.41
 
 	sudo ip link add veth0 type veth peer name veth1
 	sudo ip link set dev veth1 address 02:01:01:01:01:01
@@ -37,12 +39,22 @@ run:
 	sudo docker exec RMain sysctl -w net.ipv6.conf.veth1.accept_dad=0
 	sudo docker exec RMain sysctl -w net.ipv6.conf.all.forwarding=1
 	sudo docker exec RMain ip -6 addr add fd63::1/64 dev veth1
+	sudo docker exec RMain ip addr add 192.168.70.40/24 dev veth1
+	sudo docker exec RMain ip -6 addr add fd70::40/64 dev veth1
+	sudo docker exec RMain ip addr add 192.168.50.1/24 dev veth1
+	sudo docker exec RMain ip -6 addr add fd50::1/64 dev veth1
 
 	sudo ip link add veth2 type veth peer name veth3
 	sudo ovs-vsctl add-port ovs1 veth2
 	sudo ip link set veth2 up
 	sudo ovs-vsctl add-port ovs2 veth3
 	sudo ip link set veth3 up
+
+	sudo ovs-vsctl add-port ovs2 vxlan1 -- set interface vxlan1 type=vxlan options:remote_ip=192.168.60.40  # TA
+
+	sleep 30s
+	make run-arp run-bridge run-vrouter
+	onos-netcfg localhost /home/ycyyo/final-project/intfConfig.json
 
 clean:
 	docker compose down

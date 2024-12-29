@@ -115,20 +115,26 @@ public class AppComponent {
     private IpAddress[] routerIp = {
         IpAddress.valueOf("192.168.63.1"),
         IpAddress.valueOf("192.168.70.40"),
+        IpAddress.valueOf("192.168.50.1"),
         IpAddress.valueOf("fd63::1"),
-        IpAddress.valueOf("fd70::40")
+        IpAddress.valueOf("fd70::40"),
+        IpAddress.valueOf("fd50::1")
     };
     private IpAddress[] peerIp = {
         IpAddress.valueOf("192.168.63.2"),
         IpAddress.valueOf("192.168.70.253"),
+        IpAddress.valueOf("192.168.50.2"),
         IpAddress.valueOf("fd63::2"),
-        IpAddress.valueOf("fd70::fe")
+        IpAddress.valueOf("fd70::fe"),
+        IpAddress.valueOf("fd50::2")
     };
     private ConnectPoint[] peerCP = {
         ConnectPoint.deviceConnectPoint("of:0000000000000001/1"),
-        ConnectPoint.deviceConnectPoint("of:0000e6c41f423949/1"), // TODO: check if the cp is 1
+        ConnectPoint.deviceConnectPoint("of:0000e6c41f423949/3"),
+        ConnectPoint.deviceConnectPoint("of:0000000000000002/2"), // TODO: check
         ConnectPoint.deviceConnectPoint("of:0000000000000001/1"),
-        ConnectPoint.deviceConnectPoint("of:0000e6c41f423949/1")
+        ConnectPoint.deviceConnectPoint("of:0000e6c41f423949/3"),
+        ConnectPoint.deviceConnectPoint("of:0000000000000002/2"),
     };
     private ConnectPoint routerCP = ConnectPoint.deviceConnectPoint("of:0000000000000001/2");
     private ConnectPoint h1CP = ConnectPoint.deviceConnectPoint("of:0000000000000002/1");
@@ -153,10 +159,11 @@ public class AppComponent {
         selectorPktIn.matchEthType(Ethernet.TYPE_IPV6);
         packetService.requestPackets(selectorPktIn.build(), PacketPriority.REACTIVE, appId);
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < peerIp.length; i++) {
             Boolean v4 = peerIp[i].isIp4();
             TrafficSelector.Builder selector = DefaultTrafficSelector.builder()
-                .matchEthType(v4 ? Ethernet.TYPE_IPV4 : Ethernet.TYPE_IPV6);
+                .matchEthType(v4 ? Ethernet.TYPE_IPV4 : Ethernet.TYPE_IPV6)
+                .matchEthDst(routerMac);
             if(v4) {
                 selector.matchIPSrc(IpPrefix.valueOf(peerIp[i], 32))
                     .matchIPDst(IpPrefix.valueOf(routerIp[i], 32));
@@ -273,6 +280,7 @@ public class AppComponent {
 
             InboundPacket pkt = context.inPacket();
 
+            // routeService.
             Optional<ResolvedRoute> optional = routeService.longestPrefixLookup(dstIp);
             if (!optional.isPresent()) {
                 log.warn("No route found for dst IP: {}", dstIp);
@@ -322,7 +330,8 @@ public class AppComponent {
             log.info("handleInASPkt: " + dstIp);
             ConnectPoint egress;
             MacAddress dstMac;
-            if (dstIp.equals(h1Ip4) || dstIp.equals(h1Ip6)) {
+            Boolean isHost = dstIp.equals(h1Ip4) || dstIp.equals(h1Ip6);
+            if (isHost) {
                 egress = h1CP;
                 dstMac = h1Mac;
             } else {
@@ -337,34 +346,41 @@ public class AppComponent {
                     break;
                 }
             }
-            if (!isRouter) {
+            if ((!isRouter) && (!isHost)) {
                 return;
             }
 
-            TrafficSelector selector = DefaultTrafficSelector.builder()
-                .matchEthType(dstIp.isIp4() ? Ethernet.TYPE_IPV4 : Ethernet.TYPE_IPV6)
-                .matchIPDst(IpPrefix.valueOf(dstIp, (dstIp.isIp4() ? 32 : 128)))
-                .build();
+            TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
+            if (dstIp.isIp4()) {
+                selector.matchEthType(Ethernet.TYPE_IPV4)
+                    .matchIPDst(IpPrefix.valueOf(dstIp, 32));
+            } else {
+                selector.matchEthType(Ethernet.TYPE_IPV6)
+                    .matchIPv6Dst(IpPrefix.valueOf(dstIp, 128));
+            }
             TrafficTreatment treatment = DefaultTrafficTreatment.builder()
                 .setEthDst(dstMac)
                 .build();
             PointToPointIntent intent = PointToPointIntent.builder()
                 .appId(appId)
-                .selector(selector)
+                .selector(selector.build())
                 .treatment(treatment)
                 .filteredEgressPoint(new FilteredConnectPoint(egress))
                 .filteredIngressPoint(new FilteredConnectPoint(context.inPacket().receivedFrom()))
                 .priority(40)
                 .build();
+            intentService.submit(intent);
         }
 
         private Boolean inAS(IpAddress ip) {
             if (ip.equals(IpAddress.valueOf("192.168.63.1"))) { return true; }
             if (ip.equals(IpAddress.valueOf("192.168.70.40"))) { return true; }
             if (ip.equals(IpAddress.valueOf("172.16.40.69"))) { return true; }
+            if (ip.equals(IpAddress.valueOf("172.16.40.2"))) { return true; }
             if (ip.equals(IpAddress.valueOf("fd63::1"))) { return true; }
             if (ip.equals(IpAddress.valueOf("fd70::40"))) { return true; }
             if (ip.equals(IpAddress.valueOf("2a0b:4e07:c4:40::69"))) { return true; }
+            if (ip.equals(IpAddress.valueOf("2a0b:4e07:c4:40::2"))) { return true; }
             return false;
         }
     }
