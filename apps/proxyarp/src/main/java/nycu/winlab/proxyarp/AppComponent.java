@@ -66,6 +66,7 @@ import org.onlab.packet.ndp.NeighborDiscoveryOptions;
 
 import java.util.List;
 import org.onlab.packet.DeserializationException;
+import java.lang.InterruptedException;
 
 import org.onosproject.net.PortNumber;
 import org.onosproject.net.DeviceId;
@@ -146,7 +147,35 @@ public class AppComponent {
         macTable6.put(Ip6Address.valueOf("fd50::2"), MacAddress.valueOf("02:42:AC:01:00:01"));
         macTable.put(IpAddress.valueOf("192.168.63.2"), MacAddress.valueOf("5A:3C:91:B4:7E:2E"));
         macTable6.put(Ip6Address.valueOf("fd63::2"), MacAddress.valueOf("5A:3C:91:B4:7E:2E"));
+        macTable6.put(Ip6Address.valueOf("fe80::1:1ff:fe01:101"), MacAddress.valueOf("02:01:01:01:01:01"));
+        macTable6.put(Ip6Address.valueOf("fe80::70d2:42ff:fe91:fca3"), MacAddress.valueOf("5A:3C:91:B4:7E:2E"));
 
+        ARP testPkt = new ARP();
+        testPkt.setSenderHardwareAddress(MacAddress.valueOf("02:01:01:01:01:01").toBytes())
+            .setSenderProtocolAddress(IpAddress.valueOf("192.168.70.40").toOctets())
+            .setTargetHardwareAddress(MacAddress.valueOf("00:00:00:00:00:00").toBytes())
+            .setTargetProtocolAddress(IpAddress.valueOf("192.168.70.253").toOctets())
+            .setOpCode(ARP.OP_REQUEST)
+            .setHardwareType(ARP.HW_TYPE_ETHERNET)
+            .setProtocolType(ARP.PROTO_TYPE_IP)
+            .setHardwareAddressLength((byte) 6)
+            .setProtocolAddressLength((byte) 4);
+        Ethernet ethPkt = new Ethernet();
+        ethPkt.setSourceMACAddress(MacAddress.valueOf("02:01:01:01:01:01"))
+            .setDestinationMACAddress(MacAddress.BROADCAST)
+            .setEtherType(Ethernet.TYPE_ARP)
+            .setPayload(testPkt);
+        for(int i = 0; i < 5; i++) {
+            log.info("send ARP pkt " + i);
+            packetOut(ethPkt, DeviceId.deviceId("of:0000e6c41f423949"), PortNumber.portNumber(3));
+            packetOut(ethPkt, DeviceId.deviceId("of:0000e6c41f423949"), PortNumber.portNumber(2));
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error("Thread was interrupted", e);
+            }
+        }
         log.info("Started");
     }
 
@@ -266,12 +295,14 @@ public class AppComponent {
         ICMP6 icmp6pkt = (ICMP6) ipv6pkt.getPayload(); 
         Ip6Address srcIp6 = Ip6Address.valueOf(ipv6pkt.getSourceAddress());
         MacAddress srcMac = ethPkt.getSourceMAC();
-        // if (macTable6.get(srcIp6) == null) {
-        //     macTable6.put(srcIp6, srcMac);
-        //     log.info("add " + srcMac + " / " + srcIp6 + " to macTable6");
-        // }
 
         if (icmp6pkt.getIcmpType() == ICMP6.NEIGHBOR_ADVERTISEMENT) {
+            // if (macTable6.get(srcIp6) == null) {
+            //     if (srcIp6.equals(Ip6Address.valueOf("fd70::fe"))) {
+            //         macTable6.put(srcIp6, srcMac);
+            //         log.info("add " + srcMac + " / " + srcIp6 + " to macTable6");
+            //     }
+            // }
             // log.info("receive neighbor advertisement");
             // log.info("\ticmp6: " + icmp6pkt.toString());
             // NeighborAdvertisement neighborAd = (NeighborAdvertisement) icmp6pkt.getPayload();
@@ -309,12 +340,20 @@ public class AppComponent {
                 //     return;
                 // }
                 // missPktStorage6.put(ip6Pair, pkt.receivedFrom());
-                // // for (Device device: devices) {
-                // //     packetOut(ethPkt, device.id(), PortNumber.FLOOD);
-                // // }
+                // IpAddress targetIp = IpAddress.valueOf(IpAddress.Version.INET6, targetIp6.toOctets());
+                // if (targetIp.equals(IpAddress.valueOf("fd70::fe"))) {
+                //     log.info("send neighbor advertisement");
+                //     packetOut(ethPkt, DeviceId.deviceId("of:0000e6c41f423949"), PortNumber.FLOOD);
+                //     // packetOut(ethPkt, DeviceId.deviceId("of:0000e6c41f423949"), PortNumber.portNumber(3));
+                // } 
                 // // log.info("TABLE MISS. Send request to edge ports");
                 log.info("TABLE MISS. Requested IP = " + targetIp6);
             } else {
+                if (targetIp6.equals(Ip6Address.valueOf("fd70::fe"))) {
+                    log.info("send neighbor solicitation");
+                    packetOut(ethPkt, DeviceId.deviceId("of:0000e6c41f423949"), PortNumber.portNumber(2));
+                    packetOut(ethPkt, DeviceId.deviceId("of:0000e6c41f423949"), PortNumber.portNumber(3));
+                }
                 // table hit, reply NDP to the device
                 Ethernet ethPktReply = NeighborAdvertisement.buildNdpAdv(targetIp6, macTable6.get(targetIp6), ethPkt);
                 IPv6 ipv6Reply = (IPv6) ethPktReply.getPayload();
@@ -336,7 +375,7 @@ public class AppComponent {
 
         DeviceId deviceId = pkt.receivedFrom().deviceId();
         PortNumber inPort = pkt.receivedFrom().port();
-        // if (macTable.get(arpSrcIp) == null) {
+        // if (macTable.get(arpSrcIp) == null && arpSrcIp.equals(IpAddress.valueOf("192.168.70.253"))) {
         //     macTable.put(arpSrcIp, arpSrcMac);
         //     log.info("add " + arpSrcMac + " / " + arpSrcIp + " to macTable");
         // }
@@ -364,7 +403,11 @@ public class AppComponent {
                 // }
                 // missPktStorage.put(ipPair, pkt.receivedFrom());
                 // for (Device device: devices) {
-                //     packetOut(ethPkt, device.id(), PortNumber.FLOOD);
+                // if (arpTargetIp.equals(IpAddress.valueOf("192.168.70.253"))) {
+                //     log.info("send ARP pkt IPv4");
+                //     packetOut(ethPkt, DeviceId.deviceId("of:0000e6c41f423949"), PortNumber.FLOOD);
+                //     // packetOut(ethPkt, DeviceId.deviceId("of:0000e6c41f423949"), PortNumber.portNumber(3));
+                // }
                 // }
                 // log.info("TABLE MISS. Send request to edge ports");
             } else {

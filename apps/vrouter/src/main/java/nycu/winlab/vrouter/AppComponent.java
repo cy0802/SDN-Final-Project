@@ -112,6 +112,7 @@ public class AppComponent {
 
     private MacAddress routerMac = MacAddress.valueOf("02:01:01:01:01:01");
     private MacAddress h1Mac = MacAddress.valueOf("5A:3C:91:B4:7E:2F");
+    private IpAddress routerLinkLocal = IpAddress.valueOf("fe80::1:1ff:fe01:101");
     private IpAddress[] routerIp = {
         IpAddress.valueOf("192.168.63.1"),
         IpAddress.valueOf("192.168.70.40"),
@@ -346,6 +347,9 @@ public class AppComponent {
                     break;
                 }
             }
+            if (dstIp.equals(routerLinkLocal)) {
+                isRouter = true;
+            }
             if ((!isRouter) && (!isHost)) {
                 return;
             }
@@ -381,6 +385,7 @@ public class AppComponent {
             if (ip.equals(IpAddress.valueOf("fd70::40"))) { return true; }
             if (ip.equals(IpAddress.valueOf("2a0b:4e07:c4:40::69"))) { return true; }
             if (ip.equals(IpAddress.valueOf("2a0b:4e07:c4:40::2"))) { return true; }
+            if (ip.equals(routerLinkLocal)) { return true; } 
             return false;
         }
     }

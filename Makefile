@@ -16,7 +16,7 @@ deploy:
 	sudo ovs-vsctl set bridge ovs2 protocols=OpenFlow14
 	sudo ovs-vsctl set-controller ovs2 tcp:127.0.0.1:6653
 	sudo ovs-docker add-port ovs2 eth0 h1 --ipaddress=172.16.40.2/24 --macaddress=5A:3C:91:B4:7E:2F
-	sudo docker exec h1 ip -6 addr add 2a0b:4e07:c4:40::69/64 dev eth0 
+	sudo docker exec h1 ip -6 addr add 2a0b:4e07:c4:40::2/64 dev eth0 
 	sudo docker exec h1 ip route add default via 172.16.40.1
 	sudo docker exec h1 ip -6 route add default via 2a0b:4e07:c4:40::1
 
