@@ -1,13 +1,21 @@
-deploy:
+deploy: 
 	sudo docker compose up -d
 	
 	sudo ovs-vsctl add-br ovs1
 	sudo ovs-vsctl set bridge ovs1 other-config:datapath-id=0000000000000001
 	sudo ovs-vsctl set bridge ovs1 protocols=OpenFlow14
 	sudo ovs-vsctl set-controller ovs1 tcp:127.0.0.1:6653
-	sudo ovs-docker add-port ovs1 eth3 RClient --ipaddress=192.168.63.2/24 --macaddress=5A:3C:91:B4:7E:2E
-	sudo docker exec RClient ip -6 addr add fd63::2/64 dev eth3
-	sudo docker exec RClient ip route replace default via 192.168.63.1 dev eth3
+	
+	sudo ip link add vethR1 type veth peer name vethOvs1
+	sudo ovs-vsctl add-port ovs1 vethOvs1
+	sudo ip link set vethOvs1 up
+	sudo ip link set vethR1 netns $$(docker inspect -f '{{.State.Pid}}' RClient)
+	sudo docker exec RClient ip link set dev vethR1 address 5a:3c:91:b4:7e:2e
+	sudo docker exec RClient ip link set dev vethR1 up
+	
+	sudo docker exec RClient ip addr add 192.168.63.2/24 dev vethR1
+	sudo docker exec RClient ip -6 addr add fd63::2/64 dev vethR1
+	sudo docker exec RClient ip route replace default via 192.168.63.1 dev vethR1
 	sudo docker exec h2 ip route replace default via 172.17.40.1 dev eth0
 	sudo docker exec h2 ip -6 route replace default via 2a0b:4e07:c4:140::1 dev eth0
 	
@@ -22,7 +30,7 @@ deploy:
 
 	# sudo ip link set dev vxlan_sys_4789 mtu 1300
 
-	sudo ovs-vsctl add-port ovs2 vxlan2 -- set interface vxlan2 type=vxlan options:remote_ip=192.168.61.41
+	sudo ovs-vsctl add-port ovs2 vxlan2 -- set interface vxlan2 type=vxlan options:remote_ip=192.168.61.42
 
 	sudo ip link add veth0 type veth peer name veth1
 	sudo ip link set dev veth1 address 02:01:01:01:01:01
@@ -79,3 +87,6 @@ run-vrouter:
 
 rerun-vrouter:
 	cd /home/ycyyo/final-project/apps/vrouter && make rerun
+
+test:
+	./test.sh

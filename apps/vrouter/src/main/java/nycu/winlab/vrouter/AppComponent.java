@@ -57,8 +57,8 @@ import org.onosproject.routeservice.RouteService;
 // import org.onosproject.routeservice.NextHop;
 // import org.onosproject.routeservice.RouteTableId;
 import org.onosproject.routeservice.ResolvedRoute;
-// import org.onosproject.routeservice.RouteInfo;
-// import org.onosproject.net.Annotations;
+import org.onosproject.routeservice.RouteInfo;
+import org.onosproject.routeservice.RouteTableId;
 
 import org.onosproject.net.ConnectPoint;
 // import org.onosproject.net.intent.MultiPointToSinglePointIntent;
@@ -68,9 +68,10 @@ import org.onosproject.net.FilteredConnectPoint;
 import org.onlab.packet.IpAddress;
 
 import java.util.Optional;
+import java.util.Collection;
 // import java.util.Map;
 // import java.util.Collection;
-// import java.util.Set;
+import java.util.Set;
 // import org.onosproject.routeservice.Route;
 
 /**
@@ -149,7 +150,7 @@ public class AppComponent {
         appId = coreService.registerApplication("nycu.sdnnfv.vrouter");
 
         // add a packet processor to packetService
-        packetService.addProcessor(processor, PacketProcessor.director(2));
+        packetService.addProcessor(processor, PacketProcessor.director(4));
 
         // install a flowrule for packet-in
         TrafficSelector.Builder selectorPktIn = DefaultTrafficSelector.builder();
@@ -280,17 +281,55 @@ public class AppComponent {
             log.info("handleRouting: " + dstIp);
 
             InboundPacket pkt = context.inPacket();
+            Ethernet ethPkt = pkt.parsed();
+            IpAddress srcIp;
+            if (ethPkt.getEtherType() == Ethernet.TYPE_IPV4) {
+                IPv4 ipv4Pkt = (IPv4) ethPkt.getPayload();
+                srcIp = IpAddress.valueOf(ipv4Pkt.getSourceAddress());
+            } else {
+                IPv6 ipv6Pkt = (IPv6) ethPkt.getPayload();
+                srcIp = IpAddress.valueOf(IpAddress.Version.INET6, ipv6Pkt.getSourceAddress());
+            }
 
-            // routeService.
-            Optional<ResolvedRoute> optional = routeService.longestPrefixLookup(dstIp);
-            if (!optional.isPresent()) {
+            Collection<RouteInfo> routeInfos = routeService.getRoutes(dstIp.isIp4() ? (new RouteTableId("ipv4")) : (new RouteTableId("ipv6")));
+            ResolvedRoute route = null;
+            Boolean found = false;
+            for (RouteInfo routeInfo: routeInfos) {
+                if (routeInfo.prefix().contains(dstIp)){
+                    found = true;
+                    Set<ResolvedRoute> routes = routeInfo.allRoutes();
+                    if (routes.isEmpty()) {
+                        log.warn("No route found for dst IP: {}", dstIp);
+                        return;
+                    }
+                    route = routes.iterator().next();
+                }
+            }
+            if (!found) {
                 log.warn("No route found for dst IP: {}", dstIp);
                 return;
             }
-            ResolvedRoute route = optional.get();
+
+            // Collection<ResolvedRoute> routes = routeService.getAllResolvedRoutes(IpPrefix.valueOf(dstIp, 
+            //     dstIp.isIp4() ? 24 : 64));
+            // if(routes.isEmpty()) {
+            //     log.warn("No route found for dst IP: {}", dstIp);
+            //     return;
+            // }
+            // ResolvedRoute route = routes.iterator().next();
+
+            // Optional<ResolvedRoute> optional = routeService.longestPrefixLookup(dstIp);
+            // if (!optional.isPresent()) {
+            //     log.warn("No route found for dst IP: {}", dstIp);
+            //     return;
+            // }
+            // ResolvedRoute route = optional.get();
 
             IpAddress nextHopIp = route.nextHop();
             MacAddress nextHopMac = route.nextHopMac();
+            if (nextHopMac == null) {
+                nextHopMac = MacAddress.valueOf("02:42:C0:A8:46:FD");
+            }
             log.info("found route to {} via {}, mac: {}", dstIp, nextHopIp, nextHopMac);
 
             Interface intf = interfaceService.getMatchingInterface(nextHopIp);
@@ -301,14 +340,21 @@ public class AppComponent {
             ConnectPoint egressCP = intf.connectPoint();
             log.info("targetConnectPoint: " + egressCP.toString());
 
+            if (pkt.receivedFrom().equals(egressCP)) {
+                log.info("packet received from egress port, drop it");
+                return;
+            }
+
             TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
 
             if (dstIp.isIp4()) {
                 selector.matchEthType(Ethernet.TYPE_IPV4)
-                    .matchIPDst(IpPrefix.valueOf(dstIp, 32));
+                    .matchIPDst(IpPrefix.valueOf(dstIp, 24))
+                    .matchIPSrc(IpPrefix.valueOf(srcIp, 24));
             } else {
                 selector.matchEthType(Ethernet.TYPE_IPV6)
-                    .matchIPv6Dst(IpPrefix.valueOf(dstIp, 128));
+                    .matchIPv6Dst(IpPrefix.valueOf(dstIp, 64))
+                    .matchIPv6Src(IpPrefix.valueOf(srcIp, 64));
             }
 
             TrafficTreatment treatment = DefaultTrafficTreatment.builder()

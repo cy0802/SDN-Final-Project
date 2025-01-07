@@ -145,10 +145,12 @@ public class AppComponent {
         macTable6.put(Ip6Address.valueOf("fd70::fe"), MacAddress.valueOf("02:42:C0:A8:46:FD"));
         macTable.put(IpAddress.valueOf("192.168.50.2"), MacAddress.valueOf("02:42:AC:01:00:01"));
         macTable6.put(Ip6Address.valueOf("fd50::2"), MacAddress.valueOf("02:42:AC:01:00:01"));
+        macTable6.put(Ip6Address.valueOf("fe80::42:acff:fe01:1"), MacAddress.valueOf("02:42:AC:01:00:01"));
         macTable.put(IpAddress.valueOf("192.168.63.2"), MacAddress.valueOf("5A:3C:91:B4:7E:2E"));
         macTable6.put(Ip6Address.valueOf("fd63::2"), MacAddress.valueOf("5A:3C:91:B4:7E:2E"));
         macTable6.put(Ip6Address.valueOf("fe80::1:1ff:fe01:101"), MacAddress.valueOf("02:01:01:01:01:01"));
-        macTable6.put(Ip6Address.valueOf("fe80::70d2:42ff:fe91:fca3"), MacAddress.valueOf("5A:3C:91:B4:7E:2E"));
+        macTable6.put(Ip6Address.valueOf("fe80::583c:91ff:feb4:7e2e"), MacAddress.valueOf("5A:3C:91:B4:7E:2E"));
+        macTable6.put(Ip6Address.valueOf("fe80::42:c0ff:fea8:46fd"), MacAddress.valueOf("02:42:C0:A8:46:FD"));
 
         ARP testPkt = new ARP();
         testPkt.setSenderHardwareAddress(MacAddress.valueOf("02:01:01:01:01:01").toBytes())
@@ -409,9 +411,14 @@ public class AppComponent {
                 //     // packetOut(ethPkt, DeviceId.deviceId("of:0000e6c41f423949"), PortNumber.portNumber(3));
                 // }
                 // }
-                // log.info("TABLE MISS. Send request to edge ports");
+                log.info("TABLE MISS. Requested IP = " + arpTargetIp);
             } else {
                 // table hit, reply ARP to the device
+                if (arpTargetIp.equals(IpAddress.valueOf("192.168.70.253"))) {
+                    log.info("send ARP pkt IPv4");
+                    packetOut(ethPkt, DeviceId.deviceId("of:0000e6c41f423949"), PortNumber.portNumber(2));
+                    packetOut(ethPkt, DeviceId.deviceId("of:0000e6c41f423949"), PortNumber.portNumber(3));
+                }
                 packetOutWithMac(arpPkt, deviceId, inPort, macTable.get(arpTargetIp));
                 log.info("TABLE HIT. Requested MAC = " + macTable.get(arpTargetIp) + " for " + arpTargetIp);
             }
